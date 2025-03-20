@@ -425,9 +425,9 @@ def generate_document():
     with col1:
         st.markdown('<div class="sub-section">', unsafe_allow_html=True)
         st.subheader("Basic Details")
-        client_name = st.text_input("Company Name", placeholder="Enter company name")
-        client_email = st.text_input("Business Email", placeholder="Enter business email")
-        date_field = st.date_input("Proposal Date", datetime.today())
+        client_name = st.text_input("Client Name", placeholder="Enter client name")
+        client_email = st.text_input("Email", placeholder="Enter email")
+        date_field = st.date_input("Date", datetime.today())
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:

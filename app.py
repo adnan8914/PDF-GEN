@@ -308,6 +308,14 @@ def format_number_with_commas(number):
     """Format number with commas (e.g., 10000 -> 10,000)"""
     return f"{number:,}"
 
+def format_price_with_gst(amount, currency_type):
+    """Calculate price with GST for INR, without GST for USD"""
+    if currency_type == "INR (₹)":
+        gst_amount = amount * 0.18  # 18% GST
+        total_with_gst = amount + gst_amount
+        return total_with_gst, gst_amount
+    return amount, 0
+
 def generate_document():
     # Page configuration
     st.set_page_config(
@@ -434,9 +442,15 @@ def generate_document():
         st.markdown('<div class="sub-section">', unsafe_allow_html=True)
         st.subheader("Contact Information")
         country = st.selectbox("Select Country", ["India", "United States", "Other"])
-        client_number = st.text_input("Contact Number", placeholder="+91 for India, +1 for US")
         
-        # Add location field for all proposals
+        # Add currency selection dropdown
+        currency_choice = st.selectbox(
+            "Select Currency",
+            ["INR (₹)", "USD ($)"],
+            key="currency_selector"
+        )
+        
+        client_number = st.text_input("Contact Number", placeholder="+91 for India, +1 for US")
         client_location = st.text_input("Location", placeholder="Enter client location")
         
         # Additional fields for specific proposals
@@ -471,8 +485,8 @@ def generate_document():
     st.header("💰 Service Pricing")
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # Get currency symbol based on country selection
-    currency_symbol = "₹" if country == "India" else "$"
+    # Get currency symbol based on currency selection instead of country
+    currency_symbol = "₹" if currency_choice == "INR (₹)" else "$"
 
     # Service pricing
     pricing_data = {}
@@ -601,20 +615,20 @@ def generate_document():
         st.markdown('<div class="sub-section">', unsafe_allow_html=True)
         st.subheader("Service Pricing")
         
-        # Update date fields
-        today_date = date_field.strftime("%d-%m-%Y")
-        validity_date = (date_field + timedelta(days=7)).strftime("%d-%m-%Y")
+        # Use existing client info and dates
+        pricing_data.update({
+            "<<client_name>>": client_name,
+            "<<client_email>>": client_email,
+            "<<client_phoneno>>": client_number,
+            "<<client_location>>": client_location,
+            "<<date>>": date_field.strftime("%d-%m-%Y"),
+            "<<validity_date>>": (date_field + timedelta(days=7)).strftime("%d-%m-%Y")
+        })
         
-        pricing_data["<<date>>"] = today_date
-        pricing_data["<<validity_date>>"] = validity_date
+        # Get currency symbol based on currency selection
+        currency_symbol = "₹" if currency_choice == "INR (₹)" else "$"
         
-        # Use the existing client info variables
-        pricing_data["<<client_name>>"] = client_name
-        pricing_data["<<client_email>>"] = client_email
-        pricing_data["<<client_phoneno>>"] = client_number
-        pricing_data["<<client_location>>"] = client_location
-        
-        # Service Pricing (rest remains the same)
+        # Service Pricing
         design_price = st.number_input(
             f"Design Cost ({currency_symbol})",
             min_value=0,
@@ -645,47 +659,33 @@ def generate_document():
         numerical_values["ai_ml_model"] = ai_ml_price
         pricing_data["<<ai_ml_model>>"] = f"{currency_symbol}{format_number_with_commas(ai_ml_price)}"
         
-        # Calculate total amount (excluding additional features)
-        total_amount = design_price + dev_price + ai_ml_price
+        # Calculate totals based on currency
+        subtotal = sum([design_price, dev_price, ai_ml_price])
+        total_with_gst, gst_amount = format_price_with_gst(subtotal, currency_choice)
         
-        # Annual Maintenance (10% of total)
-        annual_maintenance = int(total_amount * 0.10)
+        # Calculate annual maintenance
+        annual_maintenance = int(subtotal * 0.10)
         numerical_values["annual_main"] = annual_maintenance
         pricing_data["<<annual_main>>"] = f"{currency_symbol}{format_number_with_commas(annual_maintenance)}"
         
-        # Additional Features (not included in total)
-        additional_features = st.number_input(
-            f"Additional Features Cost ({currency_symbol})",
-            min_value=0,
-            value=0,
-            step=1000,
-            key="fintech_additional"
-        )
-        numerical_values["additional_feat"] = additional_features
-        pricing_data["<<additional_feat>>"] = f"{currency_symbol}{format_number_with_commas(additional_features)}"
-        
-        # Display price summary
-        st.subheader("Price Summary")
-        st.write(f"Services Total: {currency_symbol}{format_number_with_commas(total_amount)}")
-        st.write(f"Annual Maintenance (10%): {currency_symbol}{format_number_with_commas(annual_maintenance)}")
-        st.write(f"Final Amount: {currency_symbol}{format_number_with_commas(total_amount + annual_maintenance)}")
+        final_total = total_with_gst + annual_maintenance
+        pricing_data["<<total_amount>>"] = f"{currency_symbol}{format_number_with_commas(final_total)}"
     elif selected_proposal == "AI Based Search Engine":
         st.markdown('<div class="sub-section">', unsafe_allow_html=True)
         st.subheader("Service Pricing")
         
-        # Use existing client info
-        pricing_data["<<client_name>>"] = client_name
-        pricing_data["<<client_email>>"] = client_email
-        pricing_data["<<client_phoneno>>"] = client_number
-        pricing_data["<<client_location>>"] = client_location
+        # Use existing client info and dates
+        pricing_data.update({
+            "<<client_name>>": client_name,
+            "<<client_email>>": client_email,
+            "<<client_phoneno>>": client_number,
+            "<<client_location>>": client_location,
+            "<<date>>": date_field.strftime("%d-%m-%Y"),
+            "<<validity_date>>": (date_field + timedelta(days=7)).strftime("%d-%m-%Y")
+        })
         
-        # Update dates
-        today_date = date_field.strftime("%d-%m-%Y")
-        pricing_data["<<date>>"] = today_date
-        pricing_data["<<validity_date>>"] = (date_field + timedelta(days=7)).strftime("%d-%m-%Y")
-        
-        # Get currency symbol based on country
-        currency_symbol = "₹" if country == "India" else "$"
+        # Get currency symbol based on currency selection
+        currency_symbol = "₹" if currency_choice == "INR (₹)" else "$"
         
         # Service Pricing
         design_price = st.number_input(
@@ -718,51 +718,33 @@ def generate_document():
         numerical_values["test_deploy"] = test_deploy_price
         pricing_data["<<test_deploy>>"] = f"{currency_symbol}{format_number_with_commas(test_deploy_price)}"
         
-        # Calculate total amount before maintenance
-        subtotal = design_price + dev_price + test_deploy_price
+        # Calculate totals based on currency
+        subtotal = sum([design_price, dev_price, test_deploy_price])
+        total_with_gst, gst_amount = format_price_with_gst(subtotal, currency_choice)
         
-        # Calculate annual maintenance (10% of subtotal)
+        # Calculate annual maintenance
         annual_maintenance = int(subtotal * 0.10)
         numerical_values["annual_maintenance"] = annual_maintenance
         pricing_data["<<annual_maintenance>>"] = f"{currency_symbol}{format_number_with_commas(annual_maintenance)}"
         
-        # Calculate total amount including maintenance
-        total_amount = subtotal + annual_maintenance
-        pricing_data["<<total_amount>>"] = f"{currency_symbol}{format_number_with_commas(total_amount)}"
-        
-        # Additional Features (not included in total)
-        additional_features = st.number_input(
-            f"Additional Features Cost ({currency_symbol})",
-            min_value=0,
-            value=0,
-            step=1000,
-            key="search_additional"
-        )
-        numerical_values["ad_f"] = additional_features
-        pricing_data["<<ad_f>>"] = f"{currency_symbol}{format_number_with_commas(additional_features)}"
-        
-        # Display price summary
-        st.subheader("Price Summary")
-        st.write(f"Services Total: {currency_symbol}{format_number_with_commas(subtotal)}")
-        st.write(f"Annual Maintenance (10%): {currency_symbol}{format_number_with_commas(annual_maintenance)}")
-        st.write(f"Final Amount: {currency_symbol}{format_number_with_commas(total_amount)}")
+        final_total = total_with_gst + annual_maintenance
+        pricing_data["<<total_amount>>"] = f"{currency_symbol}{format_number_with_commas(final_total)}"
     elif selected_proposal == "Shopify Website":
         st.markdown('<div class="sub-section">', unsafe_allow_html=True)
         st.subheader("Service Pricing")
         
-        # Use existing client info
-        pricing_data["<<client_name>>"] = client_name
-        pricing_data["<<client_email>>"] = client_email
-        pricing_data["<<client_phoneno>>"] = client_number
-        pricing_data["<<location>>"] = country  # Note: Using country instead of client_location
+        # Use existing client info and dates
+        pricing_data.update({
+            "<<client_name>>": client_name,
+            "<<client_email>>": client_email,
+            "<<client_phoneno>>": client_number,
+            "<<location>>": country,
+            "<<date>>": date_field.strftime("%d-%m-%Y"),
+            "<<validity_date>>": (date_field + timedelta(days=7)).strftime("%d-%m-%Y")
+        })
         
-        # Update dates
-        today_date = date_field.strftime("%d-%m-%Y")
-        pricing_data["<<date>>"] = today_date
-        pricing_data["<<validity_date>>"] = (date_field + timedelta(days=7)).strftime("%d-%m-%Y")
-        
-        # Get currency symbol based on country
-        currency_symbol = "₹" if country == "India" else "$"
+        # Get currency symbol based on currency selection
+        currency_symbol = "₹" if currency_choice == "INR (₹)" else "$"
         
         # Service Pricing
         development_price = st.number_input(
@@ -795,34 +777,17 @@ def generate_document():
         numerical_values["testing"] = testing_price
         pricing_data["<<testing>>"] = f"{currency_symbol}{format_number_with_commas(testing_price)}"
         
-        # Calculate subtotal
-        subtotal = development_price + design_price + testing_price
+        # Calculate totals based on currency
+        subtotal = sum([development_price, design_price, testing_price])
+        total_with_gst, gst_amount = format_price_with_gst(subtotal, currency_choice)
         
-        # Calculate annual maintenance (10% of subtotal)
+        # Calculate annual maintenance
         annual_maintenance = int(subtotal * 0.10)
         numerical_values["annual_mai"] = annual_maintenance
         pricing_data["<<annual_mai>>"] = f"{currency_symbol}{format_number_with_commas(annual_maintenance)}"
         
-        # Calculate total amount
-        total_amount = subtotal + annual_maintenance
-        pricing_data["<<total_amount>>"] = f"{currency_symbol}{format_number_with_commas(total_amount)}"
-        
-        # Additional Features (not included in total)
-        additional_features = st.number_input(
-            f"Additional Features Cost ({currency_symbol})",
-            min_value=0,
-            value=0,
-            step=1000,
-            key="shopify_additional"
-        )
-        numerical_values["add_feature"] = additional_features
-        pricing_data["<<add_feature>>"] = f"{currency_symbol}{format_number_with_commas(additional_features)}"
-        
-        # Display price summary
-        st.subheader("Price Summary")
-        st.write(f"Services Total: {currency_symbol}{format_number_with_commas(subtotal)}")
-        st.write(f"Annual Maintenance (10%): {currency_symbol}{format_number_with_commas(annual_maintenance)}")
-        st.write(f"Final Amount: {currency_symbol}{format_number_with_commas(total_amount)}")
+        final_total = total_with_gst + annual_maintenance
+        pricing_data["<<total_amount>>"] = f"{currency_symbol}{format_number_with_commas(final_total)}"
     else:
         # Standard pricing fields for other proposals
         st.markdown('<div class="sub-section">', unsafe_allow_html=True)

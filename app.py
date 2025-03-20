@@ -1,20 +1,11 @@
 import streamlit as st
 from docx import Document
-from datetime import datetime, timedelta
+from datetime import datetime
 import os
 from docx.oxml.ns import qn
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 import uuid
 import tempfile
-import re
-import base64
-
-# Try to import docx2pdf, but provide a fallback if it's not available
-try:
-    from docx2pdf import convert
-    PDF_CONVERSION_AVAILABLE = True
-except ImportError:
-    PDF_CONVERSION_AVAILABLE = False
 
 # Proposal configurations
 PROPOSAL_CONFIG = {
@@ -123,52 +114,31 @@ PROPOSAL_CONFIG = {
         "team_type": "general",
         "special_fields": [("VDate", "<<")]
     },
-    "Digital Marketing Proposal": {
-        "template": "DM Proposal_1.docx",
+    "Digital Marketing": {
+        "template": "DM Proposal.docx",
         "pricing_fields": [
-            ("Service 1", "dm_discrip1_price"),
-            ("Service 2", "dm_discrip2_price"),
-            ("Monthly Maintenance", "monthly_main_price")
+            ("Marketing Strategy", "ms_price"),
+            ("Social Media Handles Setup", "smh_price"),
+            ("Meta & Google Ads Manager Setup", "sgam_price"),
+            ("Creative Posts (10 per month)", "cp_price"),
+            ("Meta Paid Ads", "ma_price"),
+            ("Google Paid Ads", "gpa_price"),
+            ("SEO", "seo_price"),
+            ("Email Marketing", "em_price"),
+            ("Monthly Maintenance & Reporting", "mmr_price")
         ],
-        "team_type": "marketing",
-        "special_fields": [("VDate", "<<")]
-    },
-    "DM & Automation": {
-        "template": "DM & Automations Proposal.docx",
-        "pricing_fields": [
-            ("AI Automation", "auto_price"),
-            ("Marketing Strategy", "market_stra"),
-            ("Social Media Channels", "social_med"),
-            ("Creatives (10 Per Month)", "creatives"),
-            ("Ad Account Setup", "ad_acc_set"),
-            ("Paid Ads", "paid_ads"),
-            ("Monthly Maintenance", "montly_mai")
+        "team_fields": [
+            ("Digital Marketing Executive", "dm_ex_no"),
+            ("Digital Marketing Associate", "dm_asso_no"),
+            ("Business Analyst", "ba_no"),
+            ("Graphics Designer", "gd_no")
         ],
-        "team_type": "marketing",
-        "special_fields": [("VDate", "<<")]
-    },
-    "Web Based AI Fintech": {
-        "template": "Web based AI Fintech proposal.docx",
-        "pricing_fields": [
-            ("Design", "design"),
-            ("Development", "development"),
-            ("AI/ML Models", "ai_ml_model"),
-            ("Annual Maintenance", "annual_main"),
-            ("Additional Features", "additional_feat")
+        "special_fields": [
+            ("validity_date", "<<"),
+            ("advnc_pay", "<<"),
+            ("balnc_pay", "<<")
         ],
-        "team_type": "technical",
-        "special_fields": [("VDate", "<<")]
-    },
-    "AI Based Search Engine": {
-        "template": "AI Based Search Engine Website Technical Consultation proposal.docx",
-        "pricing_fields": [
-            ("Design", "design"),
-            ("Development", "development"),
-            ("Testing & Deployment", "test_deploy"),
-            ("Annual Maintenance", "annual_maintenance"),
-            ("Additional Features", "ad_f")
-        ],
-        "team_type": "technical"
+        "team_type": "digital_marketing"
     },
     "Shopify Website": {
         "template": "Shopify website.docx",
@@ -177,9 +147,96 @@ PROPOSAL_CONFIG = {
             ("Design", "design"),
             ("Testing & Live", "testing"),
             ("Annual Maintenance", "annual_mai"),
-            ("Additional Features", "add_feature")
+            ("Additional Features & Enhancements", "add_feature")
         ],
-        "team_type": "technical"
+        "team_fields": [
+            ("Project Manager", "pm_no"),
+            ("Business Analyst", "ba_no"),
+            ("UI/UX Members", "uix_no"),
+            ("Backend Developers", "bd_no"),
+            ("Frontend Developers", "fd_no"),
+            ("AI/ML Developers", "aiml_no"),
+            ("System Architect", "sa_no"),
+            ("Shopify Developers", "sd_no")
+        ],
+        "special_fields": [
+            ("validity_date", "<<"),
+            ("location", "<<")  # Added for country/location field
+        ],
+        "team_type": "shopify"  # New team type for Shopify projects
+    },
+    "Web Based AI Fintech": {
+        "template": "Web based AI Fintech proposal.docx",
+        "pricing_fields": [
+            ("Design", "design"),
+            ("Development", "development"),
+            ("AI/ML Models", "ai_ml_model"),
+            ("Additional Features & Enhancements", "additional_feat")
+        ],
+        "team_fields": [
+            ("Project Manager", "pm_no"),
+            ("Business Analyst", "ba_no"),
+            ("UI/UX Members", "uix_no"),
+            ("Backend Developers", "bd_no"),
+            ("Frontend Developers", "fd_no"),
+            ("AI/ML Developers", "aiml_no"),
+            ("System Architect", "sa_no"),
+            ("AWS Developer", "aws_no")
+        ],
+        "special_fields": [
+            ("validity_date", "<<"),
+            ("client_location", "<<")  # Added for location field
+        ],
+        "team_type": "fintech"  # New team type for Fintech projects
+    },
+    "AI Based Search Engine": {
+        "template": "AI Based Search Engine Website Technical Consultation proposal.docx",
+        "pricing_fields": [
+            ("Designs", "design"),
+            ("Development", "development"),
+            ("Testing & Deployment", "test_deploy"),
+            ("Additional Features & Enhancements", "ad_f")
+        ],
+        "team_fields": [
+            ("Project Manager", "pm_no"),
+            ("Business Analyst", "ba_no"),
+            ("UI/UX Members", "uix_no"),
+            ("Backend Developers", "bd_no"),
+            ("Frontend Developers", "fd_no"),
+            ("AI/ML Developers", "aiml_no"),
+            ("System Architect", "sa_no"),
+            ("AWS Developer", "aws_no")
+        ],
+        "special_fields": [
+            ("validity_date", "<<"),
+            ("client_location", "<<")
+        ],
+        "team_type": "search_engine"
+    },
+    "Single Vendor Ecommerce": {
+        "template": "Single Vendor Ecommerce website.docx",
+        "pricing_fields": [
+            ("Design", "design"),
+            ("Development", "dev"),
+            ("Website Chatbot", "wb_cb"),
+            ("Testing & Deployment", "testing"),
+            ("Additional Features & Enhancements", "ad_fs")
+        ],
+        "team_fields": [
+            ("Project Manager", "pm_no"),
+            ("Business Analyst", "ba_no"),
+            ("UI/UX Members", "uix_no"),
+            ("Backend Developers", "bd_no"),
+            ("Frontend Developers", "fd_no"),
+            ("AI/ML Developers", "aiml_no"),
+            ("System Architect", "sa_no"),
+            ("AWS Developer", "aws_no")
+        ],
+        "special_fields": [
+            ("validity_date", "<<"),
+            ("location", "<<")
+        ],
+        "team_type": "ecommerce"
     }
 }
 
@@ -284,12 +341,156 @@ def get_general_team_details():
             team_details[f"<<{placeholder}>>"] = str(count)
     return team_details
 
+def get_digital_marketing_team_details():
+    """Collect team composition details specifically for digital marketing proposals"""
+    st.subheader("Digital Marketing Team Composition")
+    team_details = {}
+    cols = st.columns(2)
+
+    team_roles = {
+        "Digital Marketing Executive": "dm_ex_no",
+        "Digital Marketing Associate": "dm_asso_no",
+        "Business Analyst": "ba_no",
+        "Graphics Designer": "gd_no"
+    }
+
+    for idx, (role, placeholder) in enumerate(team_roles.items()):
+        with cols[idx % 2]:
+            count = st.number_input(
+                f"{role} Count:",
+                min_value=0,
+                step=1,
+                key=f"dm_team_{placeholder}"
+            )
+            team_details[f"<<{placeholder}>>"] = str(count)
+    return team_details
+
+def get_shopify_team_details():
+    """Collect team composition details specifically for Shopify projects"""
+    st.subheader("Shopify Team Composition")
+    team_details = {}
+    cols = st.columns(2)
+
+    team_roles = {
+        "Project Manager": "pm_no",
+        "Business Analyst": "ba_no",
+        "UI/UX Members": "uix_no",
+        "Backend Developers": "bd_no",
+        "Frontend Developers": "fd_no",
+        "AI/ML Developers": "aiml_no",
+        "System Architect": "sa_no",
+        "Shopify Developers": "sd_no"
+    }
+
+    for idx, (role, placeholder) in enumerate(team_roles.items()):
+        with cols[idx % 2]:
+            count = st.number_input(
+                f"{role} Count:",
+                min_value=0,
+                step=1,
+                key=f"shopify_team_{placeholder}"
+            )
+            team_details[f"<<{placeholder}>>"] = str(count)
+    return team_details
+
+def get_fintech_team_details():
+    """Collect team composition details specifically for Fintech projects"""
+    st.subheader("Fintech Team Composition")
+    team_details = {}
+    cols = st.columns(2)
+
+    team_roles = {
+        "Project Manager": "pm_no",
+        "Business Analyst": "ba_no",
+        "UI/UX Members": "uix_no",
+        "Backend Developers": "bd_no",
+        "Frontend Developers": "fd_no",
+        "AI/ML Developers": "aiml_no",
+        "System Architect": "sa_no",
+        "AWS Developer": "aws_no"
+    }
+
+    for idx, (role, placeholder) in enumerate(team_roles.items()):
+        with cols[idx % 2]:
+            count = st.number_input(
+                f"{role} Count:",
+                min_value=0,
+                step=1,
+                key=f"fintech_team_{placeholder}"
+            )
+            team_details[f"<<{placeholder}>>"] = str(count)
+    return team_details
+
+def get_search_engine_team_details():
+    """Collect team composition details specifically for AI Search Engine projects"""
+    st.subheader("AI Search Engine Team Composition")
+    team_details = {}
+    cols = st.columns(2)
+
+    team_roles = {
+        "Project Manager": "pm_no",
+        "Business Analyst": "ba_no",
+        "UI/UX Members": "uix_no",
+        "Backend Developers": "bd_no",
+        "Frontend Developers": "fd_no",
+        "AI/ML Developers": "aiml_no",
+        "System Architect": "sa_no",
+        "AWS Developer": "aws_no"
+    }
+
+    for idx, (role, placeholder) in enumerate(team_roles.items()):
+        with cols[idx % 2]:
+            count = st.number_input(
+                f"{role} Count:",
+                min_value=0,
+                step=1,
+                key=f"search_engine_team_{placeholder}"
+            )
+            team_details[f"<<{placeholder}>>"] = str(count)
+    return team_details
+
+def get_ecommerce_team_details():
+    """Collect team composition details specifically for Ecommerce projects"""
+    st.subheader("Ecommerce Team Composition")
+    team_details = {}
+    cols = st.columns(2)
+
+    team_roles = {
+        "Project Manager": "pm_no",
+        "Business Analyst": "ba_no",
+        "UI/UX Members": "uix_no",
+        "Backend Developers": "bd_no",
+        "Frontend Developers": "fd_no",
+        "AI/ML Developers": "aiml_no",
+        "System Architect": "sa_no",
+        "AWS Developer": "aws_no"
+    }
+
+    for idx, (role, placeholder) in enumerate(team_roles.items()):
+        with cols[idx % 2]:
+            count = st.number_input(
+                f"{role} Count:",
+                min_value=0,
+                step=1,
+                key=f"ecommerce_team_{placeholder}"
+            )
+            team_details[f"<<{placeholder}>>"] = str(count)
+    return team_details
+
 def remove_empty_rows(table):
-    """Remove rows from the table where the second cell is empty or has no value."""
+    """Remove rows from the table where the pricing cell is empty or zero"""
     rows_to_remove = []
     for row in table.rows:
-        if len(row.cells) > 1 and row.cells[1].text.strip() == "":
-            rows_to_remove.append(row)
+        # Skip header row if it exists
+        if row.cells[0].text.strip().lower() == 'description':
+            continue
+            
+        # Check if price cell is empty or contains only currency symbol or zero
+        if len(row.cells) > 2:  # Ensure we have enough cells
+            price_cell = row.cells[2].text.strip()
+            if price_cell == "" or price_cell == "$0" or price_cell == "₹0" or price_cell == "0":
+                rows_to_remove.append(row)
+    
     # Remove rows in reverse order to avoid index issues
     for row in reversed(rows_to_remove):
         table._tbl.remove(row._element)
@@ -299,7 +500,10 @@ def validate_phone_number(country, phone_number):
     if country.lower() == "india":
         if not phone_number.startswith("+91"):
             return False
-    else:
+    elif country.lower() == "australia":
+        if not phone_number.startswith("+61"):
+            return False
+    else:  # USA and others
         if not phone_number.startswith("+1"):
             return False
     return True
@@ -308,499 +512,102 @@ def format_number_with_commas(number):
     """Format number with commas (e.g., 10000 -> 10,000)"""
     return f"{number:,}"
 
-def format_price_with_gst(amount, currency_type):
-    """Calculate price with GST for INR, without GST for USD"""
-    if currency_type == "INR (₹)":
-        gst_amount = amount * 0.18  # 18% GST
-        total_with_gst = amount + gst_amount
-        return total_with_gst, gst_amount
-    return amount, 0
-
 def generate_document():
-    # Page configuration
-    st.set_page_config(
-        page_title="AI Automation Proposal Generator",
-        page_icon="🤖",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
+    st.title("Proposal Generator")
+    base_dir = os.getcwd()  # Changed from templates directory
 
-    # Custom CSS for modern styling
-    st.markdown("""
-        <style>
-        /* Main container styling */
-        .main {
-            padding: 1rem;
-        }
-        
-        /* Sidebar styling */
-        .css-1d391kg {
-            background-color: #f1f3f6;
-        }
-        
-        /* Header styling */
-        .main-header {
-            text-align: center;
-            padding: 1.5rem 0;
-            margin-bottom: 2rem;
-            background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
-            border-radius: 10px;
-        }
-        
-        /* Section styling */
-        .section-header {
-            color: #1e3c72;
-            padding: 1rem 0;
-            margin-bottom: 1rem;
-            border-bottom: 2px solid #e0e0e0;
-        }
-        
-        /* Input field styling */
-        .stTextInput > div > div > input {
-            border-radius: 5px;
-        }
-        
-        /* Button styling */
-        .stButton > button {
-            background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
-            border: none;
-            padding: 0.5rem 2rem;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-        }
-        
-        .stButton > button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        
-        /* Metrics styling */
-        .metrics-container {
-            background-color: #f8f9fa;
-            padding: 1rem;
-            border-radius: 8px;
-            margin: 1rem 0;
-        }
-        
-        /* Divider styling */
-        .section-divider {
-            margin: 2rem 0;
-            border-top: 1px solid #e0e0e0;
-        }
-
-        /* Sub-section styling */
-        .sub-section {
-            margin: 1rem 0;
-            padding-left: 1rem;
-            border-left: 3px solid #1e3c72;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-    # Sidebar for template selection
-    with st.sidebar:
-        st.title("📄 Template Selection")
-        st.markdown("---")
-        selected_proposal = st.selectbox(
-            "Choose Your Proposal Type",
-            list(PROPOSAL_CONFIG.keys()),
-            format_func=lambda x: x.replace("_", " ").title()
-        )
-        st.markdown("---")
-        st.markdown("### Selected Template:")
-        st.info(selected_proposal.replace("_", " ").title())
-
+    selected_proposal = st.selectbox("Select Proposal", list(PROPOSAL_CONFIG.keys()))
     config = PROPOSAL_CONFIG[selected_proposal]
-    base_dir = os.getcwd()
     template_path = os.path.join(base_dir, config["template"])
 
-    # Main header
-    st.markdown("""
-        <div class="main-header">
-            <h1>AI Automation Proposal Generator</h1>
-            <p>Create professional proposals in minutes</p>
-        </div>
-    """, unsafe_allow_html=True)
-
     # Client Information
-    st.markdown('<div class="section-header">', unsafe_allow_html=True)
-    st.header("🏢 Company Information")
-    st.markdown('</div>', unsafe_allow_html=True)
-    
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown('<div class="sub-section">', unsafe_allow_html=True)
-        st.subheader("Basic Details")
-        client_name = st.text_input("Client Name", placeholder="Enter client name")
-        client_email = st.text_input("Email", placeholder="Enter email")
-        date_field = st.date_input("Date", datetime.today())
-        st.markdown('</div>', unsafe_allow_html=True)
-
+        client_name = st.text_input("Client Name:")
+        client_email = st.text_input("Client Email:")
     with col2:
-        st.markdown('<div class="sub-section">', unsafe_allow_html=True)
-        st.subheader("Contact Information")
-        country = st.selectbox("Select Country", ["India", "United States", "Other"])
-        
-        # Add currency selection dropdown
-        currency_choice = st.selectbox(
-            "Select Currency",
-            ["INR (₹)", "USD ($)"],
-            key="currency_selector"
-        )
-        
-        client_number = st.text_input("Contact Number", placeholder="+91 for India, +1 for US")
-        client_location = st.text_input("Location", placeholder="Enter client location")
-        
-        # Additional fields for specific proposals
-        if selected_proposal in ["Digital Marketing Proposal", "DM & Automation"]:
-            client_desig = st.text_input("Client Designation", placeholder="Enter client designation")
-        
+        country = st.text_input("Country:")
+        client_number = st.text_input("Client Number:")
         if client_number and country:
             if not validate_phone_number(country, client_number):
-                st.error(f"Invalid format. Use {'+91' if country.lower() == 'india' else '+1'} prefix")
-        st.markdown('</div>', unsafe_allow_html=True)
+                prefix = {
+                    "india": "+91",
+                    "australia": "+61",
+                    "usa": "+1"
+                }.get(country.lower(), "+1")
+                st.error(f"Phone number for {country} should start with {prefix}")
+
+    date_field = st.date_input("Date:", datetime.today())
+
+    # Currency Handling
+    currency = st.selectbox("Select Currency", ["USD", "INR", "AUD"])
+    currency_symbol = {
+        "USD": "$",
+        "INR": "₹",
+        "AUD": "A$"
+    }.get(currency, "$")
 
     # Special Fields Handling
     special_data = {}
     if config.get("special_fields"):
-        st.markdown('<div class="section-header">', unsafe_allow_html=True)
-        st.header("📋 Additional Details")
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown('<div class="sub-section">', unsafe_allow_html=True)
+        st.subheader("Additional Details")
         for field, wrapper in config["special_fields"]:
             if wrapper == "<<":
                 placeholder = f"<<{field}>>"
-                if field == "VDate":
-                    vdate = st.date_input("Proposal Validity Until:", date_field + timedelta(days=7))
+                if field == "VDate" or field == "validity_date":  # Handle both VDate and validity_date
+                    vdate = st.date_input(
+                        "Proposal Validity Until:",
+                        min_value=datetime.today(),
+                        value=datetime.today()
+                    )
                     special_data[placeholder] = vdate.strftime("%d-%m-%Y")
+                elif field in ["advnc_pay", "balnc_pay"]:  # Handle payment fields
+                    value = st.number_input(
+                        f"{field.replace('_', ' ').title()} ({currency})",
+                        min_value=0,
+                        step=100,
+                        format="%d"
+                    )
+                    special_data[placeholder] = f"{currency_symbol}{format_number_with_commas(value)}" if value > 0 else ""
                 else:
                     special_data[placeholder] = st.text_input(f"{field.replace('_', ' ').title()}:")
-        st.markdown('</div>', unsafe_allow_html=True)
 
-    # Service Pricing Section
-    st.markdown('<div class="section-header">', unsafe_allow_html=True)
-    st.header("💰 Service Pricing")
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Get currency symbol based on currency selection instead of country
-    currency_symbol = "₹" if currency_choice == "INR (₹)" else "$"
+    # Initialize placeholders at the start
+    placeholders = {
+        "<<client_name>>": client_name,
+        "<<client_phone>>": client_number,
+        "<<client_phoneno>>": client_number,
+        "<<client_email>>": client_email,
+        "<<date>>": date_field.strftime("%d-%m-%Y"),
+        "<<Country>>": country,
+        "<<Client Name>>": client_name,
+        "<<Client Email>>": client_email,
+        "<<Client Number>>": client_number,
+        "<<Date>>": date_field.strftime("%d-%m-%Y")
+    }
 
-    # Service pricing
+    # Pricing Section
+    st.subheader("Pricing Details")
     pricing_data = {}
     numerical_values = {}
-    
-    if selected_proposal == "DM & Automation":
-        st.markdown('<div class="sub-section">', unsafe_allow_html=True)
-        st.subheader("Service Pricing")
-        
-        # Client Information
-        pricing_data["<<client_name>>."] = client_name
-        pricing_data["<<client_name>>"] = client_name  # For signature
-        pricing_data["<<client_desig>>"] = client_desig if 'client_desig' in locals() else ""
-        pricing_data["<<client_cont>>"] = client_number
-        pricing_data["<<client_email>>"] = client_email
-        
-        # Dates
-        today_date = date_field.strftime("%d-%m-%Y")
-        pricing_data["<<date>>"] = today_date  # This will update all instances of <<date>>
-        pricing_data["<<validity_date>>"] = (date_field + timedelta(days=7)).strftime("%d-%m-%Y")
-        
-        # Service Pricing - All as number inputs
-        pricing_fields = [
-            ("AI Automation", "auto_price"),
-            ("Marketing Strategy", "market_stra"),
-            ("Social Media Channels", "social_med"),
-            ("Creatives (10 Per Month)", "creatives"),
-            ("Ad Account Setup (Meta)", "ad_acc_set"),
-            ("Paid Ads (Lead Generation)", "paid_ads"),
-            ("Monthly Maintenance & Reporting", "montly_mai")
-        ]
-        
-        for display_name, field_key in pricing_fields:
-            price = st.number_input(
-                f"{display_name} Price ({currency_symbol})",
-                min_value=0,
-                value=0,
-                step=1000,
-                key=f"dma_{field_key}"  # Prefix with dma_ to avoid conflicts
-            )
-            numerical_values[field_key] = price
-            pricing_data[f"<<{field_key}>>"] = f"{currency_symbol}{format_number_with_commas(price)}"
-        
-        # Calculate totals
-        amount_1_business = sum(numerical_values.values())
-        amount_2_business = int(amount_1_business * 0.9)  # 10% discount
-        total_amount = amount_1_business + amount_2_business
-        
-        # Update pricing data
-        pricing_data["<<amount_for_1_buisness>>"] = f"{currency_symbol}{format_number_with_commas(amount_1_business)}"
-        pricing_data["<<amount_2_buisness>>"] = f"{currency_symbol}{format_number_with_commas(amount_2_business)}"
-        pricing_data["<< amount_2_buisness>>"] = f"{currency_symbol}{format_number_with_commas(amount_2_business)}"
-        pricing_data["<<total_amount>>"] = f"{currency_symbol}{format_number_with_commas(total_amount)}"
-        
-        # Payment schedule calculations
-        payment_30 = int(total_amount * 0.3)
-        payment_40 = int(total_amount * 0.4)
-        balance_payment = total_amount - payment_30 - payment_40
-        
-        pricing_data["<<30_payment>>"] = f"{currency_symbol}{format_number_with_commas(payment_30)}"
-        pricing_data["<<40_payment>>"] = f"{currency_symbol}{format_number_with_commas(payment_40)}"
-        pricing_data["<<blnc_payment>>"] = f"{currency_symbol}{format_number_with_commas(balance_payment)}"
 
-    elif selected_proposal == "Digital Marketing Proposal":
-        st.markdown('<div class="sub-section">', unsafe_allow_html=True)
-        st.subheader("Service Descriptions")
+    # Create a container for pricing fields
+    pricing_container = st.container()
+    
+    with pricing_container:
+        st.write("Enter pricing for each service:")
         
-        col1, col2 = st.columns(2)
-        with col1:
-            dm_description1 = st.text_input("Service 1 Description", 
-                                          placeholder="e.g., Social Media Management",
-                                          key="dm_desc1")
-            pricing_data["<<dm_discprition1>>"] = dm_description1
-            
-            service1_price = st.number_input(
-                f"Service 1 Price ({currency_symbol})",
-                min_value=0,
-                value=0,
-                step=1000,
-                key="price_dm_discrip1_price"
-            )
-            numerical_values["dm_discrip1_price"] = service1_price
-            if service1_price > 0:
-                pricing_data["<<dm_discrip1_price>>"] = f"{currency_symbol}{format_number_with_commas(service1_price)}"
-            else:
-                pricing_data["<<dm_discrip1_price>>"] = ""
-                
-        with col2:
-            dm_description2 = st.text_input("Service 2 Description", 
-                                          placeholder="e.g., Content Creation",
-                                          key="dm_desc2")
-            pricing_data["<<dm_discprition2>>"] = dm_description2
-            
-            service2_price = st.number_input(
-                f"Service 2 Price ({currency_symbol})",
-                min_value=0,
-                value=0,
-                step=1000,
-                key="price_dm_discrip2_price"
-            )
-            numerical_values["dm_discrip2_price"] = service2_price
-            if service2_price > 0:
-                pricing_data["<<dm_discrip2_price>>"] = f"{currency_symbol}{format_number_with_commas(service2_price)}"
-            else:
-                pricing_data["<<dm_discrip2_price>>"] = ""
-        
-        # Monthly maintenance
-        monthly_price = st.number_input(
-            f"Monthly Maintenance Price ({currency_symbol})",
-            min_value=0,
-            value=0,
-            step=1000,
-            key="price_monthly_main_price"
-        )
-        numerical_values["monthly_main_price"] = monthly_price
-        if monthly_price > 0:
-            pricing_data["<<monthly_main_price>>"] = f"{currency_symbol}{format_number_with_commas(monthly_price)}"
-        else:
-            pricing_data["<<monthly_main_price>>"] = ""
-            
-        # Set GST text
-        pricing_data["<<gst>>"] = "GST (18%)"
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-    elif selected_proposal == "Web Based AI Fintech":
-        st.markdown('<div class="sub-section">', unsafe_allow_html=True)
-        st.subheader("Service Pricing")
-        
-        # Use existing client info and dates
-        pricing_data.update({
-            "<<client_name>>": client_name,
-            "<<client_email>>": client_email,
-            "<<client_phoneno>>": client_number,
-            "<<client_location>>": client_location,
-            "<<date>>": date_field.strftime("%d-%m-%Y"),
-            "<<validity_date>>": (date_field + timedelta(days=7)).strftime("%d-%m-%Y")
-        })
-        
-        # Get currency symbol based on currency selection
-        currency_symbol = "₹" if currency_choice == "INR (₹)" else "$"
-        
-        # Service Pricing
-        design_price = st.number_input(
-            f"Design Cost ({currency_symbol})",
-            min_value=0,
-            value=0,
-            step=1000,
-            key="fintech_design"
-        )
-        numerical_values["design"] = design_price
-        pricing_data["<<design>>"] = f"{currency_symbol}{format_number_with_commas(design_price)}"
-        
-        dev_price = st.number_input(
-            f"Development Cost ({currency_symbol})",
-            min_value=0,
-            value=0,
-            step=1000,
-            key="fintech_development"
-        )
-        numerical_values["development"] = dev_price
-        pricing_data["<<development>>"] = f"{currency_symbol}{format_number_with_commas(dev_price)}"
-        
-        ai_ml_price = st.number_input(
-            f"AI/ML Models Cost ({currency_symbol})",
-            min_value=0,
-            value=0,
-            step=1000,
-            key="fintech_ai_ml"
-        )
-        numerical_values["ai_ml_model"] = ai_ml_price
-        pricing_data["<<ai_ml_model>>"] = f"{currency_symbol}{format_number_with_commas(ai_ml_price)}"
-        
-        # Calculate totals based on currency
-        subtotal = sum([design_price, dev_price, ai_ml_price])
-        total_with_gst, gst_amount = format_price_with_gst(subtotal, currency_choice)
-        
-        # Calculate annual maintenance
-        annual_maintenance = int(subtotal * 0.10)
-        numerical_values["annual_main"] = annual_maintenance
-        pricing_data["<<annual_main>>"] = f"{currency_symbol}{format_number_with_commas(annual_maintenance)}"
-        
-        final_total = total_with_gst + annual_maintenance
-        pricing_data["<<total_amount>>"] = f"{currency_symbol}{format_number_with_commas(final_total)}"
-    elif selected_proposal == "AI Based Search Engine":
-        st.markdown('<div class="sub-section">', unsafe_allow_html=True)
-        st.subheader("Service Pricing")
-        
-        # Use existing client info and dates
-        pricing_data.update({
-            "<<client_name>>": client_name,
-            "<<client_email>>": client_email,
-            "<<client_phoneno>>": client_number,
-            "<<client_location>>": client_location,
-            "<<date>>": date_field.strftime("%d-%m-%Y"),
-            "<<validity_date>>": (date_field + timedelta(days=7)).strftime("%d-%m-%Y")
-        })
-        
-        # Get currency symbol based on currency selection
-        currency_symbol = "₹" if currency_choice == "INR (₹)" else "$"
-        
-        # Service Pricing
-        design_price = st.number_input(
-            f"Design Cost ({currency_symbol})",
-            min_value=0,
-            value=0,
-            step=1000,
-            key="search_design"
-        )
-        numerical_values["design"] = design_price
-        pricing_data["<<design>>"] = f"{currency_symbol}{format_number_with_commas(design_price)}"
-        
-        dev_price = st.number_input(
-            f"Development Cost ({currency_symbol})",
-            min_value=0,
-            value=0,
-            step=1000,
-            key="search_development"
-        )
-        numerical_values["development"] = dev_price
-        pricing_data["<<development>>"] = f"{currency_symbol}{format_number_with_commas(dev_price)}"
-        
-        test_deploy_price = st.number_input(
-            f"Testing & Deployment Cost ({currency_symbol})",
-            min_value=0,
-            value=0,
-            step=1000,
-            key="search_test_deploy"
-        )
-        numerical_values["test_deploy"] = test_deploy_price
-        pricing_data["<<test_deploy>>"] = f"{currency_symbol}{format_number_with_commas(test_deploy_price)}"
-        
-        # Calculate totals based on currency
-        subtotal = sum([design_price, dev_price, test_deploy_price])
-        total_with_gst, gst_amount = format_price_with_gst(subtotal, currency_choice)
-        
-        # Calculate annual maintenance
-        annual_maintenance = int(subtotal * 0.10)
-        numerical_values["annual_maintenance"] = annual_maintenance
-        pricing_data["<<annual_maintenance>>"] = f"{currency_symbol}{format_number_with_commas(annual_maintenance)}"
-        
-        final_total = total_with_gst + annual_maintenance
-        pricing_data["<<total_amount>>"] = f"{currency_symbol}{format_number_with_commas(final_total)}"
-    elif selected_proposal == "Shopify Website":
-        st.markdown('<div class="sub-section">', unsafe_allow_html=True)
-        st.subheader("Service Pricing")
-        
-        # Use existing client info and dates
-        pricing_data.update({
-            "<<client_name>>": client_name,
-            "<<client_email>>": client_email,
-            "<<client_phoneno>>": client_number,
-            "<<location>>": country,
-            "<<date>>": date_field.strftime("%d-%m-%Y"),
-            "<<validity_date>>": (date_field + timedelta(days=7)).strftime("%d-%m-%Y")
-        })
-        
-        # Get currency symbol based on currency selection
-        currency_symbol = "₹" if currency_choice == "INR (₹)" else "$"
-        
-        # Service Pricing
-        development_price = st.number_input(
-            f"Development Cost ({currency_symbol})",
-            min_value=0,
-            value=0,
-            step=1000,
-            key="shopify_development"
-        )
-        numerical_values["development"] = development_price
-        pricing_data["<<development>>"] = f"{currency_symbol}{format_number_with_commas(development_price)}"
-        
-        design_price = st.number_input(
-            f"Design Cost ({currency_symbol})",
-            min_value=0,
-            value=0,
-            step=1000,
-            key="shopify_design"
-        )
-        numerical_values["design"] = design_price
-        pricing_data["<<design>>"] = f"{currency_symbol}{format_number_with_commas(design_price)}"
-        
-        testing_price = st.number_input(
-            f"Testing & Live Cost ({currency_symbol})",
-            min_value=0,
-            value=0,
-            step=1000,
-            key="shopify_testing"
-        )
-        numerical_values["testing"] = testing_price
-        pricing_data["<<testing>>"] = f"{currency_symbol}{format_number_with_commas(testing_price)}"
-        
-        # Calculate totals based on currency
-        subtotal = sum([development_price, design_price, testing_price])
-        total_with_gst, gst_amount = format_price_with_gst(subtotal, currency_choice)
-        
-        # Calculate annual maintenance
-        annual_maintenance = int(subtotal * 0.10)
-        numerical_values["annual_mai"] = annual_maintenance
-        pricing_data["<<annual_mai>>"] = f"{currency_symbol}{format_number_with_commas(annual_maintenance)}"
-        
-        final_total = total_with_gst + annual_maintenance
-        pricing_data["<<total_amount>>"] = f"{currency_symbol}{format_number_with_commas(final_total)}"
-    else:
-        # Standard pricing fields for other proposals
-        st.markdown('<div class="sub-section">', unsafe_allow_html=True)
-        cols = st.columns(len(config["pricing_fields"]))
-        
-        for idx, (label, key) in enumerate(config["pricing_fields"]):
-            with cols[idx]:
-                st.subheader(label)
+        for label, key in config["pricing_fields"]:
+            col1, col2 = st.columns([3, 2])
+            with col1:
+                st.write(f"• {label}")
+            with col2:
                 value = st.number_input(
-                    f"Amount ({currency_symbol})",
+                    f"Amount ({currency})",
                     min_value=0,
                     value=0,
                     step=100,
+                    format="%d",
                     key=f"price_{key}"
                 )
                 numerical_values[key] = value
@@ -808,98 +615,149 @@ def generate_document():
                     pricing_data[f"<<{key}>>"] = f"{currency_symbol}{format_number_with_commas(value)}"
                 else:
                     pricing_data[f"<<{key}>>"] = ""
-        st.markdown('</div>', unsafe_allow_html=True)
 
-    # Calculate services sum based on selected proposal
-    services_sum = sum(numerical_values.values())
-    
-    # Digital Marketing specific calculations
-    if selected_proposal == "Digital Marketing Proposal":
-        # GST calculation (18%)
-        gst_amount = int(services_sum * 0.18)
-        pricing_data["<<gst_price>>"] = f"{currency_symbol}{format_number_with_commas(gst_amount)}"
-        
-        # Total with GST
-        total_with_gst = services_sum + gst_amount
-        pricing_data["<<total_price>>"] = f"{currency_symbol}{format_number_with_commas(total_with_gst)}"
-        
-        # Advance payment (50%)
-        advance_payment = int(total_with_gst * 0.5)
-        pricing_data["<<advance>>"] = f"{currency_symbol}{format_number_with_commas(advance_payment)}"
-        
-        # Balance payment (50%)
-        pricing_data["<<balance>>"] = f"{currency_symbol}{format_number_with_commas(advance_payment)}"
-        
-        # Set validity date
-        pricing_data["<<validity_date>>"] = (date_field + timedelta(days=7)).strftime("%d-%m-%Y")
-        
-        # Update placeholders based on proposal type
-        pricing_data["<<client_desig>>"] = client_desig if 'client_desig' in locals() else ""
-    else:
-        # Annual Maintenance (10% of Total Amount) for other proposals
-        am_price = int(services_sum * 0.10)
-        pricing_data["<<AM-Price>>"] = f"{currency_symbol}{format_number_with_commas(am_price)}"
+        st.markdown("---")
 
-        # Total Amount
-        total = services_sum + am_price
-        if currency_symbol == "₹":
-            pricing_data["<<T-Price>>"] = f"{currency_symbol}{format_number_with_commas(total)} + 18% GST"
+        # Different display for Web Based AI Fintech and AI Based Search Engine
+        if selected_proposal == "Web Based AI Fintech":
+            # Calculate base total (excluding additional features)
+            base_total = (
+                numerical_values.get("design", 0) + 
+                numerical_values.get("development", 0) + 
+                numerical_values.get("ai_ml_model", 0)
+            )
+            
+            # Calculate annual maintenance (10% of base total)
+            am_price = int(base_total * 0.10)
+            total = base_total + am_price
+            
+            # Display breakdowns and update pricing data
+            st.write(f"**Base Services Cost:** {currency_symbol}{format_number_with_commas(base_total)}")
+            st.write(f"**Annual Maintenance (10%):** {currency_symbol}{format_number_with_commas(am_price)}")
+            st.write("---")
+            
+            # Update pricing data for Web Based AI Fintech
+            pricing_data["<<annual_main>>"] = f"{currency_symbol}{format_number_with_commas(am_price)}"
+            
+        elif selected_proposal == "AI Based Search Engine":
+            # Calculate base total (excluding additional features)
+            base_total = (
+                numerical_values.get("design", 0) + 
+                numerical_values.get("development", 0) + 
+                numerical_values.get("test_deploy", 0)
+            )
+            
+            # Calculate annual maintenance (10% of base total)
+            am_price = int(base_total * 0.10)
+            total = base_total + am_price
+            
+            # Display breakdowns
+            st.write(f"**Base Services Cost:** {currency_symbol}{format_number_with_commas(base_total)}")
+            st.write(f"**Annual Maintenance (10%):** {currency_symbol}{format_number_with_commas(am_price)}")
+            st.write("---")
+            
+            # Update pricing data for AI Based Search Engine
+            pricing_data["<<annual_mainte>>"] = f"{currency_symbol}{format_number_with_commas(am_price)}"
+            
+        elif selected_proposal == "Single Vendor Ecommerce":
+            # Calculate base total (excluding additional features)
+            base_total = (
+                numerical_values.get("design", 0) + 
+                numerical_values.get("dev", 0) + 
+                numerical_values.get("wb_cb", 0) + 
+                numerical_values.get("testing", 0)
+            )
+            
+            # Calculate annual maintenance (10% of base total)
+            am_price = int(base_total * 0.10)
+            
+            # Calculate final total
+            total = base_total + am_price
+            
+            # Display breakdowns
+            st.write(f"**Base Services Cost:** {currency_symbol}{format_number_with_commas(base_total)}")
+            st.write(f"**Annual Maintenance (10%):** {currency_symbol}{format_number_with_commas(am_price)}")
+            st.write("---")
+            if currency == "INR":
+                st.write(f"**Total Amount:** {currency_symbol}{format_number_with_commas(total)} + 18% GST")
+            else:
+                st.write(f"**Total Amount:** {currency_symbol}{format_number_with_commas(total)}")
+            
+            # Additional Features display (separate from total)
+            af_price = {
+                "USD": 250,
+                "INR": 25000,
+                "AUD": 375
+            }.get(currency, 250)
+            st.write("---")
+            st.write(f"**Additional Features & Enhancements:** {currency_symbol}{format_number_with_commas(af_price)}")
+            
+            # Update pricing data
+            pricing_data["<<an_ma>>"] = f"{currency_symbol}{format_number_with_commas(am_price)}"
+            total_price_str = f"{currency_symbol}{format_number_with_commas(total)}"
+            if currency == "INR":
+                total_price_str += " + 18% GST"
+            pricing_data["<<total>>"] = total_price_str
+            placeholders["<<total>>"] = total_price_str
+            pricing_data["<<ad_fs>>"] = f"{currency_symbol}{format_number_with_commas(af_price)}"
+
         else:
-            pricing_data["<<T-Price>>"] = f"{currency_symbol}{format_number_with_commas(total)}"
+            # Original calculation for other proposals
+            total = sum(numerical_values.values())
+            am_price = int(total * 0.10)
+            total += am_price
+            pricing_data["<<AM-Price>>"] = f"{currency_symbol}{format_number_with_commas(am_price)}"
 
-        # Additional Features & Enhancements
-        af_price = 250 if currency_symbol == "$" else 25000
-        pricing_data["<<AF-Price>>"] = f"{currency_symbol}{format_number_with_commas(af_price)}"
+        # Display total amount
+        if selected_proposal in ["Web Based AI Fintech", "AI Based Search Engine"]:
+            if currency == "INR":
+                st.write(f"**Total Amount:** {currency_symbol}{format_number_with_commas(total)} + 18% GST")
+                total_price_str = f"{currency_symbol}{format_number_with_commas(total)} + 18% GST"
+            else:
+                st.write(f"**Total Amount:** {currency_symbol}{format_number_with_commas(total)}")
+                total_price_str = f"{currency_symbol}{format_number_with_commas(total)}"
+            
+            # Additional Features display (separate from total)
+            af_price = {
+                "USD": 250,
+                "INR": 25000,
+                "AUD": 375
+            }.get(currency, 250)
+            st.write("---")
+            st.write(f"**Additional Features & Enhancements:** {currency_symbol}{format_number_with_commas(af_price)}")
+            
+            # Update pricing data based on proposal type
+            if selected_proposal == "Web Based AI Fintech":
+                pricing_data["<<total_price>>"] = total_price_str
+                placeholders["<<total_price>>"] = total_price_str
+                pricing_data["<<additional_feat>>"] = f"{currency_symbol}{format_number_with_commas(af_price)}"
+            else:  # AI Based Search Engine
+                pricing_data["<<total_amount>>"] = total_price_str
+                placeholders["<<total_amount>>"] = total_price_str
+                pricing_data["<<ad_f>>"] = f"{currency_symbol}{format_number_with_commas(af_price)}"
 
-    # Price Summary
-    st.markdown('<div class="metrics-container">', unsafe_allow_html=True)
-    st.subheader("Price Summary")
-    
-    if selected_proposal == "Digital Marketing Proposal":
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Services Total", f"{currency_symbol}{format_number_with_commas(services_sum)}")
-        with col2:
-            st.metric("GST (18%)", f"{currency_symbol}{format_number_with_commas(gst_amount)}")
-        with col3:
-            st.metric("Final Amount", f"{currency_symbol}{format_number_with_commas(total_with_gst)}")
-    else:
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Services Total", f"{currency_symbol}{format_number_with_commas(services_sum)}")
-        with col2:
-            st.metric("Annual Maintenance (10%)", f"{currency_symbol}{format_number_with_commas(am_price)}")
-        with col3:
-            st.metric("Final Amount", 
-                    f"{currency_symbol}{format_number_with_commas(total)}" + 
-                    (" + 18% GST" if currency_symbol == "₹" else ""))
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Team Configuration Section
-    st.markdown('<div class="section-header">', unsafe_allow_html=True)
-    st.header("👥 Team Configuration")
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown('<div class="sub-section">', unsafe_allow_html=True)
+    # Team Composition
     team_data = {}
-    if config["team_type"] == "marketing" and selected_proposal != "Digital Marketing Proposal":
+    if config["team_type"] == "marketing":
         team_data = get_marketing_team_details()
     elif config["team_type"] == "general":
         team_data = get_general_team_details()
-    st.markdown('</div>', unsafe_allow_html=True)
+    elif config["team_type"] == "digital_marketing":
+        team_data = get_digital_marketing_team_details()
+    elif config["team_type"] == "shopify":
+        team_data = get_shopify_team_details()
+    elif config["team_type"] == "fintech":
+        team_data = get_fintech_team_details()
+    elif config["team_type"] == "search_engine":
+        team_data = get_search_engine_team_details()
+    elif config["team_type"] == "ecommerce":
+        team_data = get_ecommerce_team_details()
 
-    # Additional Tools Section
-    st.markdown('<div class="section-header">', unsafe_allow_html=True)
-    st.header("🛠️ Additional Tools")
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown('<div class="sub-section">', unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        additional_tool_1 = st.text_input("Tool 1", placeholder="Enter tool name")
-    with col2:
-        additional_tool_2 = st.text_input("Tool 2", placeholder="Enter tool name")
-    
+    # Add Additional Tools Section
+    st.subheader("Add Additional Tools")
+    additional_tool_1 = st.text_input("Tool 1:")
+    additional_tool_2 = st.text_input("Tool 2:")
+
     additional_tools_data = {}
     if additional_tool_1:
         additional_tools_data["<<T1>>"] = additional_tool_1
@@ -910,121 +768,49 @@ def generate_document():
         additional_tools_data["<<T2>>"] = additional_tool_2
     else:
         additional_tools_data["<<T2>>"] = ""
-    st.markdown('</div>', unsafe_allow_html=True)
 
-    # Generate Proposal Button
-    st.markdown('<div style="margin-top: 2rem;">', unsafe_allow_html=True)
-    if st.button("🚀 Generate Proposal", type="primary", use_container_width=True):
-        with st.spinner("Creating your proposal..."):
-            try:
-                # Combine all placeholders
-                placeholders = {
-                    "<<Client Name>>": client_name,
-                    "<<Client Email>>": client_email,
-                    "<<Client Number>>": client_number,
-                    "<<Date>>": date_field.strftime("%d-%m-%Y"),
-                    "<<Country>>": country
-                }
-                
-                # Add Digital Marketing specific placeholders
-                if selected_proposal == "Digital Marketing Proposal":
-                    placeholders["<<client_name>>"] = client_name
-                    placeholders["<<client_email>>"] = client_email
-                    placeholders["<<client_contact>>"] = client_number
-                    placeholders["<<client_desig>>"] = client_desig if 'client_desig' in locals() else ""
-                    placeholders["<<date>>"] = date_field.strftime("%d-%m-%Y")
-                    placeholders["<<validity_date>>"] = (date_field + timedelta(days=7)).strftime("%d-%m-%Y")
-                
-                placeholders.update(pricing_data)
-                placeholders.update(team_data)
-                placeholders.update(special_data)
-                placeholders.update(additional_tools_data)
-                
-                # Format date for filename
-                formatted_date = date_field.strftime("%d_%b_%Y")
-                unique_id = str(uuid.uuid4())[:8]
-                doc_filename = f"{selected_proposal}_{client_name}_{formatted_date}_{unique_id}.docx"
-                
-                with tempfile.TemporaryDirectory() as temp_dir:
-                    try:
-                        doc = Document(template_path)
-                    except FileNotFoundError:
-                        st.error(f"Template file not found: {template_path}")
-                        return
+    # Calculate total price string based on currency
+    total_price_str = f"{currency_symbol}{format_number_with_commas(total)}"
+    if currency == "INR":
+        total_price_str += " + 18% GST"
 
-                    doc = replace_and_format(doc, placeholders)
+    # Update all placeholders
+    placeholders.update(pricing_data)
+    placeholders.update(team_data)
+    placeholders.update(special_data)
+    placeholders.update(additional_tools_data)
 
-                    # Remove empty rows from the pricing table
-                    for table in doc.tables:
-                        remove_empty_rows(table)
+    if st.button("Generate Proposal"):
+        if client_number and country and not validate_phone_number(country, client_number):
+            st.error(f"Invalid phone number format for {country} should start with {'+91' if country.lower() == 'india' else '+1'}.")
+        else:
+            formatted_date = date_field.strftime("%d %b %Y")
+            unique_id = str(uuid.uuid4())[:8]
+            doc_filename = f"{selected_proposal}_{client_name}_{formatted_date}_{unique_id}.docx"
 
-                    doc_path = os.path.join(temp_dir, doc_filename)
-                    doc.save(doc_path)
+            with tempfile.TemporaryDirectory() as temp_dir:
+                try:
+                    doc = Document(template_path)
+                except FileNotFoundError:
+                    st.error(f"Template file not found: {template_path}")
+                    return
 
-                    with open(doc_path, "rb") as f:
-                        docx_bytes = f.read()
-                    
-                    st.success("Proposal generated successfully!")
-                    
+                doc = replace_and_format(doc, placeholders)
+
+                # Remove empty rows from the pricing table
+                for table in doc.tables:
+                    remove_empty_rows(table)
+
+                doc_path = os.path.join(temp_dir, doc_filename)
+                doc.save(doc_path)
+
+                with open(doc_path, "rb") as f:
                     st.download_button(
-                        label="📥 Download Proposal",
-                        data=docx_bytes,
+                        label="Download Proposal",
+                        data=f,
                         file_name=doc_filename,
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        key="download_docx"
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     )
-                    
-                    # PDF conversion if available
-                    if PDF_CONVERSION_AVAILABLE:
-                        try:
-                            pdf_path = os.path.join(temp_dir, f"{selected_proposal}_{client_name}_{formatted_date}_{unique_id}.pdf")
-                            convert(doc_path, pdf_path)
-                            
-                            with open(pdf_path, "rb") as f:
-                                pdf_bytes = f.read()
-                            
-                            st.download_button(
-                                label="📥 Download PDF",
-                                data=pdf_bytes,
-                                file_name=f"{selected_proposal}_{client_name}_{formatted_date}_{unique_id}.pdf",
-                                mime="application/pdf",
-                                key="download_pdf"
-                            )
-                        except Exception as e:
-                            st.warning("PDF conversion failed. Please download the DOCX file.")
-                    else:
-                        st.info("PDF conversion is not available. Install docx2pdf for PDF support.")
-                        st.code("pip install docx2pdf", language="bash")
-            
-            except Exception as e:
-                st.error(f"Error generating proposal: {str(e)}")
-                st.error("Please make sure all required fields are filled correctly.")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# Add this function for DM & Automation specific calculations
-def calculate_dm_automation_pricing(pricing_data, numerical_values, currency_symbol):
-    # Calculate amount for 1 business
-    amount_1_business = sum(numerical_values.values())
-    pricing_data["<<amount_for_1_buisness>>"] = f"{currency_symbol}{format_number_with_commas(amount_1_business)}"
-    
-    # Calculate 10% discount for 2nd business
-    amount_2_business = int(amount_1_business * 0.9)  # 10% discount
-    pricing_data["<<amount_2_buisness>>"] = f"{currency_symbol}{format_number_with_commas(amount_2_business)}"
-    
-    # Calculate total amount
-    total_amount = amount_1_business + amount_2_business
-    pricing_data["<<total_amount>>"] = f"{currency_symbol}{format_number_with_commas(total_amount)}"
-    
-    # Calculate payment schedule
-    payment_30 = int(total_amount * 0.3)
-    payment_40 = int(total_amount * 0.4)
-    balance_payment = total_amount - payment_30 - payment_40
-    
-    pricing_data["<<30_payment>>"] = f"{currency_symbol}{format_number_with_commas(payment_30)}"
-    pricing_data["<<40_payment>>"] = f"{currency_symbol}{format_number_with_commas(payment_40)}"
-    pricing_data["<<blnc_payment>>"] = f"{currency_symbol}{format_number_with_commas(balance_payment)}"
-    
-    return pricing_data
 
 if __name__ == "__main__":
     generate_document()

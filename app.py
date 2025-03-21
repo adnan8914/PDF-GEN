@@ -237,6 +237,55 @@ PROPOSAL_CONFIG = {
             ("location", "<<")
         ],
         "team_type": "ecommerce"
+    },
+    "Community App": {
+        "template": "Community App Tech Proposal.docx",
+        "pricing_fields": [
+            ("Design", "design"),
+            ("AI/ML & Development", "develop"),
+            ("QA & Project Management", "qa_manag"),
+            ("Additional Features & Enhancements", "add_fea")
+        ],
+        "team_fields": [
+            ("Project Manager", "pm_no"),
+            ("Business Analyst", "ba_no"),
+            ("UI/UX Members", "uix_no"),
+            ("Backend Developers", "bd_no"),
+            ("Frontend Developers", "fd_no"),
+            ("AI/ML Developers", "aiml_no"),
+            ("System Architect", "sa_no"),
+            ("AWS Developer", "aws_no")
+        ],
+        "special_fields": [
+            ("validity_date", "<<"),
+            ("location", "<<")
+        ],
+        "team_type": "community_app"
+    },
+    "Job Portal Website": {
+        "template": "Job portal website Tech Proposal.docx",
+        "pricing_fields": [
+            ("Design", "design"),
+            ("Development", "develop"),
+            ("Automations", "autom"),
+            ("Testing & Deployment", "deplo"),
+            ("Additional Features & Enhancements", "ad_fs")
+        ],
+        "team_fields": [
+            ("Project Manager", "pm_no"),
+            ("Business Analyst", "ba_no"),
+            ("UI/UX Members", "uix_no"),
+            ("Backend Developers", "bd_no"),
+            ("Frontend Developers", "fd_no"),
+            ("AI/ML Developers", "aiml_no"),
+            ("System Architect", "sa_no"),
+            ("AWS Developer", "aws_no")
+        ],
+        "special_fields": [
+            ("validity_date", "<<"),
+            ("location", "<<")
+        ],
+        "team_type": "job_portal"
     }
 }
 
@@ -477,6 +526,62 @@ def get_ecommerce_team_details():
             team_details[f"<<{placeholder}>>"] = str(count)
     return team_details
 
+def get_community_app_team_details():
+    """Collect team composition details specifically for Community App projects"""
+    st.subheader("Community App Team Composition")
+    team_details = {}
+    cols = st.columns(2)
+
+    team_roles = {
+        "Project Manager": "pm_no",
+        "Business Analyst": "ba_no",
+        "UI/UX Members": "uix_no",
+        "Backend Developers": "bd_no",
+        "Frontend Developers": "fd_no",
+        "AI/ML Developers": "aiml_no",
+        "System Architect": "sa_no",
+        "AWS Developer": "aws_no"
+    }
+
+    for idx, (role, placeholder) in enumerate(team_roles.items()):
+        with cols[idx % 2]:
+            count = st.number_input(
+                f"{role} Count:",
+                min_value=0,
+                step=1,
+                key=f"community_app_team_{placeholder}"
+            )
+            team_details[f"<<{placeholder}>>"] = str(count)
+    return team_details
+
+def get_job_portal_team_details():
+    """Collect team composition details specifically for Job Portal projects"""
+    st.subheader("Job Portal Team Composition")
+    team_details = {}
+    cols = st.columns(2)
+
+    team_roles = {
+        "Project Manager": "pm_no",
+        "Business Analyst": "ba_no",
+        "UI/UX Members": "uix_no",
+        "Backend Developers": "bd_no",
+        "Frontend Developers": "fd_no",
+        "AI/ML Developers": "aiml_no",
+        "System Architect": "sa_no",
+        "AWS Developer": "aws_no"
+    }
+
+    for idx, (role, placeholder) in enumerate(team_roles.items()):
+        with cols[idx % 2]:
+            count = st.number_input(
+                f"{role} Count:",
+                min_value=0,
+                step=1,
+                key=f"job_portal_team_{placeholder}"
+            )
+            team_details[f"<<{placeholder}>>"] = str(count)
+    return team_details
+
 def remove_empty_rows(table):
     """Remove rows from the table where the pricing cell is empty or zero"""
     rows_to_remove = []
@@ -618,7 +723,10 @@ def generate_document():
 
         st.markdown("---")
 
-        # Different display for Web Based AI Fintech and AI Based Search Engine
+        # Initialize total at the start
+        total = 0
+
+        # Different display for different proposal types
         if selected_proposal == "Web Based AI Fintech":
             # Calculate base total (excluding additional features)
             base_total = (
@@ -701,21 +809,77 @@ def generate_document():
             placeholders["<<total>>"] = total_price_str
             pricing_data["<<ad_fs>>"] = f"{currency_symbol}{format_number_with_commas(af_price)}"
 
-        else:
-            # Original calculation for other proposals
-            total = sum(numerical_values.values())
-            am_price = int(total * 0.10)
-            total += am_price
-            pricing_data["<<AM-Price>>"] = f"{currency_symbol}{format_number_with_commas(am_price)}"
-
-        # Display total amount
-        if selected_proposal in ["Web Based AI Fintech", "AI Based Search Engine"]:
+        elif selected_proposal == "Community App":
+            # Calculate base total (excluding additional features)
+            base_total = (
+                numerical_values.get("design", 0) + 
+                numerical_values.get("develop", 0) + 
+                numerical_values.get("qa_manag", 0)
+            )
+            
+            # Calculate annual maintenance (10% of base total)
+            am_price = int(base_total * 0.10)
+            
+            # Calculate final total
+            total = base_total + am_price
+            
+            # Display breakdowns
+            st.write(f"**Base Services Cost:** {currency_symbol}{format_number_with_commas(base_total)}")
+            st.write(f"**Annual Maintenance (10%):** {currency_symbol}{format_number_with_commas(am_price)}")
+            st.write("---")
+            
+            # Format total price
+            total_price_str = f"{currency_symbol}{format_number_with_commas(total)}"
+            if currency == "INR":
+                total_price_str += " + 18% GST"
+            st.write(f"**Total Amount:** {total_price_str}")
+            
+            # Additional Features price
+            af_price = {
+                "USD": 250,
+                "INR": 25000,
+                "AUD": 375
+            }.get(currency, 250)
+            st.write("---")
+            st.write(f"**Additional Features & Enhancements:** {currency_symbol}{format_number_with_commas(af_price)}")
+            
+            # Update pricing data
+            pricing_data.update({
+                "<<design>>": f"{currency_symbol}{format_number_with_commas(numerical_values.get('design', 0))}",
+                "<<develop>>": f"{currency_symbol}{format_number_with_commas(numerical_values.get('develop', 0))}",
+                "<<qa_manag>>": f"{currency_symbol}{format_number_with_commas(numerical_values.get('qa_manag', 0))}",
+                "<<ann_main>>": f"{currency_symbol}{format_number_with_commas(am_price)}",
+                "<<total_price>>": total_price_str,
+                "<<add_fea>>": f"{currency_symbol}{format_number_with_commas(af_price)}",
+                "<<AF-Price>>": f"{currency_symbol}{format_number_with_commas(af_price)}"
+            })
+            
+            # Update placeholders
+            placeholders.update(pricing_data)
+            
+        elif selected_proposal == "Job Portal Website":
+            # Calculate base total (excluding additional features)
+            base_total = (
+                numerical_values.get("design", 0) + 
+                numerical_values.get("develop", 0) + 
+                numerical_values.get("autom", 0) + 
+                numerical_values.get("deplo", 0)
+            )
+            
+            # Calculate annual maintenance (10% of base total)
+            am_price = int(base_total * 0.10)
+            
+            # Calculate final total
+            total = base_total + am_price
+            
+            # Display breakdowns
+            st.write(f"**Base Services Cost:** {currency_symbol}{format_number_with_commas(base_total)}")
+            st.write(f"**Annual Maintenance (10%):** {currency_symbol}{format_number_with_commas(am_price)}")
+            st.write("---")
             if currency == "INR":
                 st.write(f"**Total Amount:** {currency_symbol}{format_number_with_commas(total)} + 18% GST")
-                total_price_str = f"{currency_symbol}{format_number_with_commas(total)} + 18% GST"
             else:
                 st.write(f"**Total Amount:** {currency_symbol}{format_number_with_commas(total)}")
-                total_price_str = f"{currency_symbol}{format_number_with_commas(total)}"
             
             # Additional Features display (separate from total)
             af_price = {
@@ -726,15 +890,41 @@ def generate_document():
             st.write("---")
             st.write(f"**Additional Features & Enhancements:** {currency_symbol}{format_number_with_commas(af_price)}")
             
-            # Update pricing data based on proposal type
-            if selected_proposal == "Web Based AI Fintech":
-                pricing_data["<<total_price>>"] = total_price_str
-                placeholders["<<total_price>>"] = total_price_str
-                pricing_data["<<additional_feat>>"] = f"{currency_symbol}{format_number_with_commas(af_price)}"
-            else:  # AI Based Search Engine
-                pricing_data["<<total_amount>>"] = total_price_str
-                placeholders["<<total_amount>>"] = total_price_str
-                pricing_data["<<ad_f>>"] = f"{currency_symbol}{format_number_with_commas(af_price)}"
+            # Update pricing data
+            pricing_data.update({
+                "<<design>>": f"{currency_symbol}{format_number_with_commas(numerical_values.get('design', 0))}",
+                "<<develop>>": f"{currency_symbol}{format_number_with_commas(numerical_values.get('develop', 0))}",
+                "<<autom>>": f"{currency_symbol}{format_number_with_commas(numerical_values.get('autom', 0))}",
+                "<<deplo>>": f"{currency_symbol}{format_number_with_commas(numerical_values.get('deplo', 0))}",
+                "<<an_m>>": f"{currency_symbol}{format_number_with_commas(am_price)}",
+                "<<total_price>>": f"{currency_symbol}{format_number_with_commas(total)}" + (" + 18% GST" if currency == "INR" else ""),
+                "<<ad_fs>>": f"{currency_symbol}{format_number_with_commas(af_price)}"
+            })
+            
+            # Update placeholders
+            placeholders.update(pricing_data)
+            
+        else:
+            # Original calculation for other proposals
+            total = sum(numerical_values.values())
+            am_price = int(total * 0.10)
+            total += am_price
+            
+            # Additional Features price
+            af_price = {
+                "USD": 250,
+                "INR": 25000,
+                "AUD": 375
+            }.get(currency, 250)
+            
+            # Update pricing data
+            pricing_data["<<AM-Price>>"] = f"{currency_symbol}{format_number_with_commas(am_price)}"
+            pricing_data["<<AF-Price>>"] = f"{currency_symbol}{format_number_with_commas(af_price)}"
+            
+            if currency == "INR":
+                pricing_data["<<T-Price>>"] = f"{currency_symbol}{format_number_with_commas(total)} + 18% GST"
+            else:
+                pricing_data["<<T-Price>>"] = f"{currency_symbol}{format_number_with_commas(total)}"
 
     # Team Composition
     team_data = {}
@@ -752,6 +942,10 @@ def generate_document():
         team_data = get_search_engine_team_details()
     elif config["team_type"] == "ecommerce":
         team_data = get_ecommerce_team_details()
+    elif config["team_type"] == "community_app":
+        team_data = get_community_app_team_details()
+    elif config["team_type"] == "job_portal":
+        team_data = get_job_portal_team_details()
 
     # Add Additional Tools Section
     st.subheader("Add Additional Tools")

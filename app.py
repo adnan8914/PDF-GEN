@@ -286,6 +286,30 @@ PROPOSAL_CONFIG = {
             ("location", "<<")
         ],
         "team_type": "job_portal"
+    },
+    "AI Automations with Landing Page": {
+        "template": "AI Automations Proposal and LPW.docx",
+        "pricing_fields": [
+            ("ManyChat & Make Automation", "mny_mk_price"),
+            ("AI Calling with CRM Connection", "aical_crm_price"),
+            ("Landing Page Website", "lpw_price"),
+            ("Additional Features & Enhancements", "add_fea_price")
+        ],
+        "team_fields": [
+            ("Project Manager", "pd_no"),
+            ("Business Analyst", "ba_no"),
+            ("UI/UX Members", "uix_no"),
+            ("Backend Developers", "bd_no"),
+            ("Frontend Developers", "fd_no"),
+            ("AI/ML Developers", "aiml_no"),
+            ("System Architect", "sa_no"),
+            ("AWS Developer", "aws_no")
+        ],
+        "special_fields": [
+            ("validity_date", "<<"),
+            ("location", "<<")
+        ],
+        "team_type": "ai_automation_lpw"
     }
 }
 
@@ -578,6 +602,34 @@ def get_job_portal_team_details():
                 min_value=0,
                 step=1,
                 key=f"job_portal_team_{placeholder}"
+            )
+            team_details[f"<<{placeholder}>>"] = str(count)
+    return team_details
+
+def get_ai_automation_lpw_team_details():
+    """Collect team composition details specifically for AI Automations with Landing Page projects"""
+    st.subheader("AI Automations with Landing Page Team Composition")
+    team_details = {}
+    cols = st.columns(2)
+
+    team_roles = {
+        "Project Manager": "pd_no",
+        "Business Analyst": "ba_no",
+        "UI/UX Members": "uix_no",
+        "Backend Developers": "bd_no",
+        "Frontend Developers": "fd_no",
+        "AI/ML Developers": "aiml_no",
+        "System Architect": "sa_no",
+        "AWS Developer": "aws_no"
+    }
+
+    for idx, (role, placeholder) in enumerate(team_roles.items()):
+        with cols[idx % 2]:
+            count = st.number_input(
+                f"{role} Count:",
+                min_value=0,
+                step=1,
+                key=f"ai_automation_lpw_team_{placeholder}"
             )
             team_details[f"<<{placeholder}>>"] = str(count)
     return team_details
@@ -904,6 +956,51 @@ def generate_document():
             # Update placeholders
             placeholders.update(pricing_data)
             
+        elif selected_proposal == "AI Automations with Landing Page":
+            # Calculate base total (excluding additional features)
+            base_total = (
+                numerical_values.get("mny_mk_price", 0) + 
+                numerical_values.get("aical_crm_price", 0) + 
+                numerical_values.get("lpw_price", 0)
+            )
+            
+            # Calculate annual maintenance (10% of base total)
+            am_price = int(base_total * 0.10)
+            
+            # Calculate final total
+            total = base_total + am_price
+            
+            # Display breakdowns
+            st.write(f"**Base Services Cost:** {currency_symbol}{format_number_with_commas(base_total)}")
+            st.write(f"**Annual Maintenance (10%):** {currency_symbol}{format_number_with_commas(am_price)}")
+            st.write("---")
+            if currency == "INR":
+                st.write(f"**Total Amount:** {currency_symbol}{format_number_with_commas(total)} + 18% GST")
+            else:
+                st.write(f"**Total Amount:** {currency_symbol}{format_number_with_commas(total)}")
+            
+            # Additional Features display (separate from total)
+            af_price = {
+                "USD": 250,
+                "INR": 25000,
+                "AUD": 375
+            }.get(currency, 250)
+            st.write("---")
+            st.write(f"**Additional Features & Enhancements:** {currency_symbol}{format_number_with_commas(af_price)}")
+            
+            # Update pricing data
+            pricing_data.update({
+                "<<mny_mk_price>>": f"{currency_symbol}{format_number_with_commas(numerical_values.get('mny_mk_price', 0))}",
+                "<<aical_crm_price>>": f"{currency_symbol}{format_number_with_commas(numerical_values.get('aical_crm_price', 0))}",
+                "<<lpw_price>>": f"{currency_symbol}{format_number_with_commas(numerical_values.get('lpw_price', 0))}",
+                "<<maint_price>>": f"{currency_symbol}{format_number_with_commas(am_price)}",
+                "<<total_price>>": f"{currency_symbol}{format_number_with_commas(total)}" + (" + 18% GST" if currency == "INR" else ""),
+                "<<add_fea_price>>": f"{currency_symbol}{format_number_with_commas(af_price)}"
+            })
+            
+            # Update placeholders
+            placeholders.update(pricing_data)
+            
         else:
             # Original calculation for other proposals
             total = sum(numerical_values.values())
@@ -946,6 +1043,8 @@ def generate_document():
         team_data = get_community_app_team_details()
     elif config["team_type"] == "job_portal":
         team_data = get_job_portal_team_details()
+    elif config["team_type"] == "ai_automation_lpw":
+        team_data = get_ai_automation_lpw_team_details()
 
     # Add Additional Tools Section
     st.subheader("Add Additional Tools")

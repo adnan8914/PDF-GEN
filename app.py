@@ -1,6 +1,6 @@
 import streamlit as st
 from docx import Document
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from docx.oxml.ns import qn
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
@@ -310,6 +310,34 @@ PROPOSAL_CONFIG = {
             ("location", "<<")
         ],
         "team_type": "ai_automation_lpw"
+    },
+    "AI Calling with CRM Connection & Make": {
+        "template": "AI Calling with  CRM Connection & Make.docx",  # Note the double space after "with"
+        "pricing_fields": [
+            ("AI Calling with CRM Connection", "AI with CRM-Price"),
+            ("Make Automation", "M-Price")
+        ],
+        "team_fields": [
+            ("Project Manager", "P1"),
+            ("Business Analyst", "B1"),
+            ("UI/UX Members", "U1"),
+            ("Backend Developers", "BD1"),
+            ("Frontend Developers", "F1"),
+            ("AI/ML Developers", "A1"),
+            ("System Architect", "S1"),
+            ("AWS Developer", "AD1")
+        ],
+        "special_fields": [
+            ("Client Name", "<<"),
+            ("Client Email", "<<"),
+            ("Client Number", "<<"),
+            ("Country", "<<"),
+            ("Date", "<<"),
+            ("VDate", "<<"),
+            ("T1", "<<"),
+            ("T2", "<<")
+        ],
+        "team_type": "ai_crm_make"
     }
 }
 
@@ -634,6 +662,34 @@ def get_ai_automation_lpw_team_details():
             team_details[f"<<{placeholder}>>"] = str(count)
     return team_details
 
+def get_ai_crm_make_team_details():
+    """Collect team composition details for AI Calling with CRM Connection & Make projects"""
+    team_details = {}
+    cols = st.columns(2)
+
+    team_roles = {
+        "Project Manager": "P1",
+        "Business Analyst": "B1",
+        "UI/UX Members": "U1",
+        "Backend Developers": "BD1",
+        "Frontend Developers": "F1",
+        "AI/ML Developers": "A1",
+        "System Architect": "S1",
+        "AWS Developer": "AD1"
+    }
+
+    for idx, (role, placeholder) in enumerate(team_roles.items()):
+        with cols[idx % 2]:
+            count = st.number_input(
+                f"{role}:",
+                min_value=0,
+                step=1,
+                key=f"ai_crm_make_team_{placeholder}"
+            )
+            team_details[f"<<{placeholder}>>"] = str(count)
+
+    return team_details
+
 def remove_empty_rows(table):
     """Remove rows from the table where the pricing cell is empty or zero"""
     rows_to_remove = []
@@ -671,11 +727,22 @@ def format_number_with_commas(number):
 
 def generate_document():
     st.title("Proposal Generator")
-    base_dir = os.getcwd()  # Changed from templates directory
-
+    
     selected_proposal = st.selectbox("Select Proposal", list(PROPOSAL_CONFIG.keys()))
     config = PROPOSAL_CONFIG[selected_proposal]
-    template_path = os.path.join(base_dir, config["template"])
+    template_path = config["template"]
+    
+    # Validate template path
+    if not os.path.exists(template_path):
+        st.error(f"Template file not found: {template_path}")
+        st.info("Please ensure all template files are in the same directory as app.py")
+        return
+
+    try:
+        doc = Document(template_path)
+    except Exception as e:
+        st.error(f"Error loading template: {str(e)}")
+        return
 
     # Client Information
     col1, col2 = st.columns(2)
@@ -705,29 +772,42 @@ def generate_document():
     }.get(currency, "$")
 
     # Special Fields Handling
+    st.subheader("Special Fields")
     special_data = {}
-    if config.get("special_fields"):
-        st.subheader("Additional Details")
-        for field, wrapper in config["special_fields"]:
-            if wrapper == "<<":
-                placeholder = f"<<{field}>>"
-                if field == "VDate" or field == "validity_date":  # Handle both VDate and validity_date
-                    vdate = st.date_input(
-                        "Proposal Validity Until:",
-                        min_value=datetime.today(),
-                        value=datetime.today()
-                    )
-                    special_data[placeholder] = vdate.strftime("%d-%m-%Y")
-                elif field in ["advnc_pay", "balnc_pay"]:  # Handle payment fields
-                    value = st.number_input(
-                        f"{field.replace('_', ' ').title()} ({currency})",
-                        min_value=0,
-                        step=100,
-                        format="%d"
-                    )
-                    special_data[placeholder] = f"{currency_symbol}{format_number_with_commas(value)}" if value > 0 else ""
-                else:
-                    special_data[placeholder] = st.text_input(f"{field.replace('_', ' ').title()}:")
+
+    # Handle special fields with unique keys
+    for field, prefix in config.get("special_fields", []):
+        placeholder = f"{prefix}{field}{prefix}"  # This creates <<field>> or <field> format
+        if field == "VDate":
+            # Skip VDate as it's calculated automatically
+            continue
+        elif field == "Date":
+            # Skip Date as it's handled by date_field
+            continue
+        elif field == "Client Name":
+            # Use existing client_name
+            special_data[placeholder] = client_name
+        elif field == "Client Email":
+            # Use existing client_email
+            special_data[placeholder] = client_email
+        elif field == "Client Number":
+            # Use existing client_number
+            special_data[placeholder] = client_number
+        elif field == "Country":
+            # Use existing country
+            special_data[placeholder] = country
+        elif field in ["T1", "T2"]:
+            # Handle additional tools with unique keys
+            special_data[placeholder] = st.text_input(
+                f"Additional Tool {field[-1]}:",
+                key=f"additional_tool_{field}_{selected_proposal}"
+            )
+        else:
+            # For any other special fields, create text input with unique key
+            special_data[placeholder] = st.text_input(
+                f"{field.replace('_', ' ').title()}:",
+                key=f"special_field_{field}_{selected_proposal}_{uuid.uuid4()}"
+            )
 
     # Initialize placeholders at the start
     placeholders = {
@@ -1001,6 +1081,48 @@ def generate_document():
             # Update placeholders
             placeholders.update(pricing_data)
             
+        elif selected_proposal == "AI Calling with CRM Connection & Make":
+            # Calculate base total
+            base_total = (
+                numerical_values.get("AI with CRM-Price", 0) + 
+                numerical_values.get("M-Price", 0)
+            )
+            
+            # Calculate annual maintenance (10% of base total)
+            am_price = int(base_total * 0.10)
+            
+            # Calculate final total
+            total = base_total + am_price
+            
+            # Additional Features price
+            af_price = {
+                "USD": 250,
+                "INR": 25000,
+                "AUD": 375
+            }.get(currency, 250)
+            
+            # Update pricing data
+            pricing_data.update({
+                "<<AI with CRM-Price>>": f"{currency_symbol}{format_number_with_commas(numerical_values.get('AI with CRM-Price', 0))}",
+                "<<M-Price>>": f"{currency_symbol}{format_number_with_commas(numerical_values.get('M-Price', 0))}",
+                "<<AM-Price>>": f"{currency_symbol}{format_number_with_commas(am_price)}",
+                "<<T-Price>>": f"{currency_symbol}{format_number_with_commas(total)}" + (" + 18% GST" if currency == "INR" else ""),
+                "<<AF-Price>>": f"{currency_symbol}{format_number_with_commas(af_price)}"
+            })
+            
+            # Update placeholders
+            placeholders.update(pricing_data)
+            
+            # Update special data for this proposal
+            special_data.update({
+                "<<Client Name>>": client_name,
+                "<<Client Email>>": client_email,
+                "<<Client Number>>": client_number,
+                "<<Country>>": country,
+                "<<Date>>": date_field.strftime("%d-%m-%Y"),
+                "<<VDate>>": (date_field + timedelta(days=7)).strftime("%d-%m-%Y")
+            })
+            
         else:
             # Original calculation for other proposals
             total = sum(numerical_values.values())
@@ -1045,6 +1167,8 @@ def generate_document():
         team_data = get_job_portal_team_details()
     elif config["team_type"] == "ai_automation_lpw":
         team_data = get_ai_automation_lpw_team_details()
+    elif config["team_type"] == "ai_crm_make":
+        team_data = get_ai_crm_make_team_details()
 
     # Add Additional Tools Section
     st.subheader("Add Additional Tools")
